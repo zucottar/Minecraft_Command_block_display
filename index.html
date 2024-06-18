@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minecraft Command Input</title>
+<link rel="icon" href="images/favicon.ico" type="image/x-icon">
+<style>
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #121212;
+    color: #fff;
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    max-width: 600px;
+    margin: auto;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+input, textarea, button, div {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 20px;
+}
+
+input, textarea {
+    background-color: #1e1e1e;
+    border: 1px solid #333333;
+    color: #fff;
+}
+
+button {
+    background-color: #4caf50;
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+#error {
+    color: #ff4c4c;
+    margin-bottom: 20px;
+    display: none;
+}
+
+#addOutput, #replaceOutput {
+    border: 1px solid #555;
+    padding: 10px;
+    white-space: pre-wrap;
+    cursor: pointer;
+    border-radius: 4px;
+    position: relative;
+    margin-top: 10px;
+    background-color: #555;
+    transition: background-color 0.3s;
+    color: #fff;
+    overflow-wrap: break-word;
+}
+#addOutput:hover::after, #replaceOutput:hover::after {
+    opacity: 1;
+}
+#addOutput::after, #replaceOutput::after {
+    content: "Натисніть на текст, щоб скопіювати";
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #444;
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    white-space: nowrap;
+}
+#addOutput:hover::before, #replaceOutput:hover::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: -20px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent transparent #333 transparent;
+}
+
+.tabs {
+    display: flex;
+    cursor: pointer;
+    margin-bottom: 20px;
+}
+
+.tab {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    background-color: #333;
+    border: 1px solid #555;
+}
+
+.tab.active {
+    background-color: #4caf50;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+</style>
+<script>
+function addTagToCommand() {
+    var command = document.getElementById('addCommand').value;
+    var replacementTag = document.getElementById('addTag').value;
+    var errorElement = document.getElementById('addError');
+
+    if (command === '' || replacementTag === '') {
+        errorElement.style.display = 'block';
+        errorElement.innerText = 'Ви хочете скомбінувати пустий текст.';
+        return;
+    } else {
+        errorElement.style.display = 'none';
+    }
+
+    var modifiedCommand = command.split(']},{').join('],Tags:["' + replacementTag + '"]},{');
+    modifiedCommand = modifiedCommand.split(']}]}').join('],Tags:["' + replacementTag + '"]}]}');
+    modifiedCommand = modifiedCommand.split('{Passengers:').join('{Tags:["' + replacementTag + '"],Passengers:');
+    document.getElementById('addOutput').innerText = modifiedCommand;
+}
+
+function replaceTagsInCommand() {
+    var command = document.getElementById('replaceCommand').value;
+    var replacementTag = document.getElementById('replaceTag').value;
+    var errorElement = document.getElementById('replaceError');
+
+    if (command === '' || replacementTag === '') {
+        errorElement.style.display = 'block';
+        errorElement.innerText = 'Ви хочете скомбінувати пустий текст.';
+        return;
+    } else {
+        errorElement.style.display = 'none';
+    }
+
+    function replaceTags(match, p1) {
+        return 'Tags:["' + replacementTag + '"]';
+    }
+
+    var tagRegex = /Tags:\[.*?\]/g;
+    command = command.replace(tagRegex, replaceTags);
+
+    document.getElementById('replaceOutput').innerText = command;
+}
+
+function copyToClipboard(elementId) {
+    var text = document.getElementById(elementId).innerText;
+    navigator.clipboard.writeText(text).then(function() {
+        var audio = new Audio('dzin.mp3');
+        audio.play();
+    });
+}
+
+function downloadTextFile(elementId) {
+    var text = document.getElementById(elementId).innerText;
+    var blob = new Blob([text], { type: 'text/plain' });
+    var anchor = document.createElement('a');
+    anchor.download = 'command.txt';
+    anchor.href = window.URL.createObjectURL(blob);
+    anchor.target = '_blank';
+    anchor.style.display = 'none'; // Не показувати елемент
+    document.body.appendChild(anchor); // Додати елемент до документа
+    anchor.click(); // Клікнути на нього
+    document.body.removeChild(anchor); // Видалити елемент після кліку
+}
+
+function switchTab(event, tabId) {
+    var tabs = document.getElementsByClassName('tab');
+    var contents = document.getElementsByClassName('tab-content');
+
+    for (var i = 0; i < tabs.length; i++) {
+        tabs[i].classList.remove('active');
+        contents[i].classList.remove('active');
+    }
+
+    document.getElementById(tabId).classList.add('active');
+    event.currentTarget.classList.add('active');
+}
+</script>
+</head>
+<body>
+<div class="container">
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab(event, 'addTab')">Додати Теги</div>
+        <div class="tab" onclick="switchTab(event, 'replaceTab')">Замінити Теги</div>
+    </div>
+
+    <div id="addTab" class="tab-content active">
+        <div id="addError" class="error"></div>
+        <label for="addCommand">Введіть команду Minecraft:</label>
+        <textarea id="addCommand" name="addCommand" rows="4"></textarea>
+        
+        <label for="addTag">Введіть новий тег:</label>
+        <input type="text" id="addTag" name="addTag">
+        
+        <button onclick="addTagToCommand()">Додати Тег</button>
+        <button onclick="downloadTextFile('addOutput')">Скачати .txt</button>
+        
+        <div id="addOutput" onclick="copyToClipboard('addOutput')"></div>
+    </div>
+
+    <div id="replaceTab" class="tab-content">
+        <div id="replaceError" class="error"></div>
+        <label for="replaceCommand">Введіть команду Minecraft:</label>
+        <textarea id="replaceCommand" name="replaceCommand" rows="4"></textarea>
+        
+        <label for="replaceTag">Введіть новий тег:</label>
+        <input type="text" id="replaceTag" name="replaceTag">
+        
+        <button onclick="replaceTagsInCommand()">Замінити Тег</button>
+        <button onclick="downloadTextFile('replaceOutput')">Скачати .txt</button>
+        
+        <div id="replaceOutput" onclick="copyToClipboard('replaceOutput')"></div>
+    </div>
+</div>
+</body>
+</html>
